@@ -20,7 +20,7 @@ class App extends React.Component {
 
     getUsers() {
         console.log(`get service url ---> ${process.env.REACT_APP_USERS_SERVICE_URL}/users`);
-        axios.get(`${process.env.REACT_APP_USERS_SERVICE_URL}/users`)
+        axios.get('http://192.168.99.100/users')
             .then((res) => {
                 console.log(res.data.data.users);
                 this.setState({ users: res.data.data.users });
