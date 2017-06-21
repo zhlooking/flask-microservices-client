@@ -19,6 +19,7 @@ class App extends React.Component {
     }
 
     getUsers() {
+        console.log(`get service url ---> ${process.env.REACT_APP_USERS_SERVICE_URL}/users`);
         axios.get(`${process.env.REACT_APP_USERS_SERVICE_URL}/users`)
             .then((res) => {
                 console.log(res.data.data.users);
@@ -40,6 +41,7 @@ class App extends React.Component {
             username: this.state.username,
             email: this.state.email,
         };
+        console.log(`post service url ---> ${process.env.REACT_APP_USERS_SERVICE_URL}/users`);
         axios.post(`${process.env.REACT_APP_USERS_SERVICE_URL}/users`, data)
             .then(() => {
                 this.getUsers();
