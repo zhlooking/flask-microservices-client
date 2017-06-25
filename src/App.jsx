@@ -2,7 +2,11 @@ import React from 'react';
 import { Switch, Route } from 'react-router-dom';
 import axios from 'axios';
 import UserList from './components/userlist';
-import About from './About.jsx';
+import About from './components/about';
+import NavBar from './components/nav_bar';
+import Form from './components/form';
+import Logout from './components/logout';
+import UserStatus from './components/user_status';
 
 
 export default class App extends React.Component {
@@ -10,9 +14,13 @@ export default class App extends React.Component {
         super();
         this.state = {
             users: [],
-            username: '',
-            email: '',
-            password: '',
+            title: 'React Frame',
+            isAuthenticated: false,
+            formData: {
+                username: '',
+                email: '',
+                password: '',
+            }
         }
     }
 
@@ -29,95 +37,88 @@ export default class App extends React.Component {
             })
     }
 
+    logoutUser() {
+        window.localStorage.removeItem('authToken');
+        this.setState({ isAuthenticated: false });
+    }
+
     handleChange(evt) {
-        if (evt.target.name === 'username') {
-            this.setState({ username: evt.target.value })
-        } else if (evt.target.name === 'email') {
-            this.setState({ email: evt.target.value })
-        } else if (evt.target.name === 'password') {
-            this.setState({ password: evt.target.value })
-        }
+        const obj = this.state.formData;
+        obj[evt.target.name] = evt.target.value;
+        this.setState(obj);
     }
 
     handleSubmit(evt) {
         evt.preventDefault();
-        const data = {
-            username: this.state.username,
-            email: this.state.email,
-            password: this.state.password,
-        };
-        console.log(`post service url ---> ${process.env.REACT_APP_USERS_SERVICE_URL}/users`);
-        axios.post(`${process.env.REACT_APP_USERS_SERVICE_URL}/users`, data)
-            .then(() => {
+        const formType = window.location.href.split('/').reverse()[0];
+        let data;
+        if (formType === 'login') {
+            data = {
+                email: this.state.email,
+                password: this.state.password,
+            };
+        } else if (formType === 'register') {
+            data = {
+                username: this.state.username,
+                email: this.state.email,
+                password: this.state.password,
+            };
+        }
+        const url = `${process.env.REACT_APP_USERS_SERVICE_URL}/auth/${formType}`;
+        axios.post(url, data)
+            .then((res) => {
+                this.setState({
+                    formData: { username: '', password: '', email: '' },
+                    isAuthenticated: true
+                });
+                window.localStorage.setItem('authToken', res.data.auth_token);
                 this.getUsers();
-                this.setState({ username: '', email: '', password: '' });
             })
             .catch((error) => { console.log(error)})
     }
 
-    _renderAddUser() {
-        return (
-            <form onSubmit={this.handleSubmit.bind(this)}>
-                <div className="form-group">
-                    <input
-                        name="username"
-                        className="form-control input-lg"
-                        type="text"
-                        placeholder="Enter a username"
-                        required
-                        value={this.state.username}
-                        onChange={this.handleChange.bind(this)}
-                    />
-                </div>
-                <div className="form-group">
-                    <input
-                        name="email"
-                        className="form-control input-lg"
-                        type="email"
-                        placeholder="Enter an email address"
-                        required
-                        value={this.state.email}
-                        onChange={this.handleChange.bind(this)}
-                    />
-                </div>
-                <div className="form-group">
-                    <input
-                        name="password"
-                        className="form-control input-lg"
-                        type="password"
-                        placeholder="Enter an password"
-                        required
-                        value={this.state.password}
-                        onChange={this.handleChange.bind(this)}
-                    />
-                </div>
-                <input
-                    type="submit"
-                    className="btn btn-primary btn-lg btn-block"
-                    value="Submit"
-                />
-            </form>
-        )
-    }
-
     render() {
         return (
-            <div className="container">
-                <div className="row">
-                    <div className="col-md-6">
-                        <br/>
-                        <Switch>
-                            <Route exact path="/" render={() => (
-                                <div>
-                                    {this._renderAddUser()}
-                                    <br/>
-                                    <h1>All Users</h1>
-                                    <hr/><br/>
+            <div>
+                <NavBar title={this.state.title} isAuthenticated={this.state.isAuthenticated} />
+                <div className="container">
+                    <div className="row">
+                        <div className="col-md-6">
+                            <br/>
+                            <Switch>
+                                <Route exact path="/" render={() => (
                                     <UserList users={this.state.users} />
-                                </div>
-                            )}/>
-                            <Route exact path="/about" render={About}/>
-                        </Switch>
+                                )}/>
+                                <Route exact path="/register" render={() => (
+                                    <Form
+                                        formType="Register"
+                                        formData={this.state.formData}
+                                        handleFormChange={this.handleChange.bind(this)}
+                                        handleFormSubmit={this.handleSubmit.bind(this)}
+                                        isAuthenticated={this.state.isAuthenticated}
+                                    />
+                                )}/>
+                                <Route exact path="/login" render={() => (
+                                    <Form
+                                        formType="Login"
+                                        formData={this.state.formData}
+                                        handleFormChange={this.handleChange.bind(this)}
+                                        handleFormSubmit={this.handleSubmit.bind(this)}
+                                        isAuthenticated={this.state.isAuthenticated}
+                                    />
+                                )}/>
+                                <Route exact path="/about" render={About} />
+                                <Route exact path="/status" component={() =>(
+                                    <UserStatus isAuthenticated={this.state.isAuthenticated}/>
+                                )} />
+                                <Route exact path="/logout" render={() => (
+                                    <Logout
+                                        logoutUser={this.logoutUser.bind(this)}
+                                        isAuthenticated={this.state.isAuthenticated}
+                                    />
+                                )} />
+                            </Switch>
+                        </div>
                     </div>
                 </div>
             </div>
